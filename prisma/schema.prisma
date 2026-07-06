@@ -1,0 +1,40 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+// The application now pulls exercise data exclusively from free-exercise-db API,
+// so the local Exercise, Muscle, Equipment, and Tag models have been completely removed 
+// as they were obsolete and 'stupidly mapped' dead code.
+
+model Workout {
+  id          String  @id @default(cuid())
+  name        String
+  description String?
+  isDraft     Boolean @default(true)
+
+  exercises WorkoutExercise[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model WorkoutExercise {
+  id           String @id @default(cuid())
+  workoutId    String
+  exerciseId   String
+  exerciseName String
+
+  order    Int    @default(0)
+  sets     Int    @default(3)
+  reps     String @default("10")
+  restTime Int    @default(60) // seconds
+
+  workout  Workout  @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+
+  @@index([workoutId])
+}
