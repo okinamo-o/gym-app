@@ -14,6 +14,7 @@ datasource db {
 
 model Workout {
   id          String  @id @default(cuid())
+  userId      String? // Make it optional temporarily to avoid breaking existing dev.db data if any, or strictly required if new. We'll make it optional for safety.
   name        String
   description String?
   isDraft     Boolean @default(true)
@@ -22,6 +23,8 @@ model Workout {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([userId])
 }
 
 model WorkoutExercise {

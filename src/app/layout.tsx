@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Outfit } from "next/font/google";
 import { Header } from "@/components/layout/Header";
 import { WorkoutProvider } from "@/lib/context/WorkoutContext";
+import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
 
 const inter = Inter({
@@ -25,15 +26,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
-      <body
-        className={`${inter.variable} ${outfit.variable} antialiased bg-background text-foreground min-h-screen`}
-      >
-        <WorkoutProvider>
-          <Header />
-          {children}
-        </WorkoutProvider>
-      </body>
-    </html>
+    <ClerkProvider>
+      <html lang="en" className="dark">
+        <body
+          className={`${inter.variable} ${outfit.variable} antialiased bg-background text-foreground min-h-screen`}
+        >
+          <WorkoutProvider>
+            <Header />
+            {children}
+          </WorkoutProvider>
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }
