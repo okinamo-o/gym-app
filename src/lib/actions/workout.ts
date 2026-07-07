@@ -98,3 +98,29 @@ export async function deleteWorkoutAction(id: string) {
     return { success: false, error: "Failed to delete workout." };
   }
 }
+
+export async function renameWorkoutAction(id: string, newName: string) {
+  try {
+    const { userId } = await auth();
+    if (!userId) {
+      return { success: false, error: "Unauthorized" };
+    }
+
+    // Verify ownership before updating
+    const workout = await prisma.workout.findUnique({ where: { id } });
+    if (!workout || workout.userId !== userId) {
+      return { success: false, error: "Unauthorized or not found" };
+    }
+
+    await prisma.workout.update({
+      where: { id },
+      data: { name: newName || "My Workout" },
+    });
+    
+    revalidatePath("/workout-builder");
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to rename workout:", error);
+    return { success: false, error: "Failed to rename workout" };
+  }
+}

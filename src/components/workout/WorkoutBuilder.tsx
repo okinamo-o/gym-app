@@ -5,7 +5,7 @@ import { Reorder, AnimatePresence, motion } from "framer-motion";
 import { GlassCard } from "@/components/ui/glass-card";
 import { MagneticButton } from "@/components/ui/magnetic-button";
 import { useWorkout, WorkoutItem } from "@/lib/context/WorkoutContext";
-import { saveWorkoutAction, getSavedWorkouts, deleteWorkoutAction } from "@/lib/actions/workout";
+import { saveWorkoutAction, getSavedWorkouts, deleteWorkoutAction, renameWorkoutAction } from "@/lib/actions/workout";
 
 interface RoutineExercise {
   id: string;
@@ -40,6 +40,8 @@ export function WorkoutBuilder() {
   // Saved routines states
   const [savedRoutines, setSavedRoutines] = useState<SavedRoutine[]>([]);
   const [isLoadingRoutines, setIsLoadingRoutines] = useState(false);
+  const [editingRoutineId, setEditingRoutineId] = useState<string | null>(null);
+  const [editRoutineName, setEditRoutineName] = useState("");
 
   // Load routines when the tab switches
   useEffect(() => {
@@ -133,6 +135,19 @@ export function WorkoutBuilder() {
       setSavedRoutines(prev => prev.filter(r => r.id !== id));
     } else {
       alert("Failed to delete routine.");
+    }
+  };
+
+  const handleRenameRoutine = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!editRoutineName.trim()) return;
+    
+    const res = await renameWorkoutAction(id, editRoutineName.trim());
+    if (res.success) {
+      setSavedRoutines(prev => prev.map(r => r.id === id ? { ...r, name: editRoutineName.trim() } : r));
+      setEditingRoutineId(null);
+    } else {
+      alert("Failed to rename routine.");
     }
   };
 
@@ -381,21 +396,61 @@ export function WorkoutBuilder() {
                   >
                     <div>
                       <div className="flex justify-between items-start mb-4">
-                        <h3 className="text-xl font-bold text-white group-hover:text-primary transition-colors leading-snug">
-                          {routine.name}
-                        </h3>
-                        <button
-                          onClick={(e) => handleDeleteRoutine(routine.id, e)}
-                          className="text-white/30 hover:text-destructive transition-colors p-1.5 rounded-lg hover:bg-white/5"
-                          aria-label={`Delete ${routine.name}`}
-                        >
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="3 6 5 6 21 6"></polyline>
-                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                            <line x1="10" y1="11" x2="10" y2="17"></line>
-                            <line x1="14" y1="11" x2="14" y2="17"></line>
-                          </svg>
-                        </button>
+                        {editingRoutineId === routine.id ? (
+                          <div className="flex-1 mr-4 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                            <input
+                              type="text"
+                              value={editRoutineName}
+                              onChange={(e) => setEditRoutineName(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleRenameRoutine(routine.id, e as any);
+                                if (e.key === 'Escape') setEditingRoutineId(null);
+                              }}
+                              className="w-full bg-black/40 border border-primary/50 rounded px-2 py-1 text-white focus:outline-none focus:ring-1 focus:ring-primary text-xl font-bold"
+                              autoFocus
+                            />
+                            <button 
+                              onClick={(e) => handleRenameRoutine(routine.id, e)}
+                              className="text-emerald-400 hover:text-emerald-300 p-1 bg-emerald-400/10 rounded"
+                            >
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                            </button>
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); setEditingRoutineId(null); }}
+                              className="text-white/40 hover:text-white p-1"
+                            >
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2 group/title" onClick={(e) => {
+                            e.stopPropagation();
+                            setEditRoutineName(routine.name);
+                            setEditingRoutineId(routine.id);
+                          }}>
+                            <h3 className="text-xl font-bold text-white group-hover:text-primary transition-colors leading-snug cursor-text">
+                              {routine.name}
+                            </h3>
+                            <button className="text-white/0 group-hover/title:text-white/40 hover:text-primary transition-colors" title="Rename workout">
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                            </button>
+                          </div>
+                        )}
+                        
+                        {!editingRoutineId && (
+                          <button
+                            onClick={(e) => handleDeleteRoutine(routine.id, e)}
+                            className="text-white/30 hover:text-destructive transition-colors p-1.5 rounded-lg hover:bg-white/5"
+                            aria-label={`Delete ${routine.name}`}
+                          >
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="3 6 5 6 21 6"></polyline>
+                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                              <line x1="10" y1="11" x2="10" y2="17"></line>
+                              <line x1="14" y1="11" x2="14" y2="17"></line>
+                            </svg>
+                          </button>
+                        )}
                       </div>
                       
                       <div className="flex gap-4 text-xs text-white/50">
